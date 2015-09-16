@@ -13,25 +13,19 @@ import java.nio.channels.DatagramChannel;
 import java.sql.Date;
 
 import main.Main;
-/** A ServerThread is created to handle incoming data from an unused port number.
- * 	If the port number is in use, the object creation fails.
- *
- * 1. sets up socket in port
- * 2. while running
- * 		listens to socket */
+/** A ServerThread is created around an already set-up port number.
+ * (Later it'll handle that itself but for now we'll assume
+ * that the socket is everything it needs to be.) */
+
 public class MulticastServerThread extends Thread {
-	private static MulticastSocket sock;
-	private InetAddress group;
+	private static MulticastSocket sock; // FIXME what is this static declaration. why is it here. get rid of it.
 	private boolean keepPlaying = true;
 
 	/** Creates a new server thread around the given socket */
 	public MulticastServerThread(MulticastSocket ms) {
 		if (ms==null) throw new IllegalArgumentException();
 		// then set up the group for this socket
-        try {
-			group = InetAddress.getByName(Main.DEFAULT_IP);
-		} catch (UnknownHostException e) { e.printStackTrace(); }
-		this.sock = ms;
+		MulticastServerThread.sock = ms;
 	}
 
 	/** MULTICAST VERSION */
@@ -52,7 +46,7 @@ public class MulticastServerThread extends Thread {
                     dString = "B";
                 buf = dString.getBytes();
                 DatagramPacket packet = new DatagramPacket(dString.getBytes(),dString.length(),
-                	group, sock.getLocalPort()); //FIXME not right
+                	sock.getInetAddress(), sock.getLocalPort()); //FIXME not right
                 sock.send(packet);
             	System.out.println(count +": "+ Byte.valueOf(buf[0]));
             } catch (IOException e) {
@@ -60,6 +54,7 @@ public class MulticastServerThread extends Thread {
                 System.out.println("end!");
             	keepPlaying = false;
             }
+
             // now wait until we have to send the next round of data
             long x = (System.currentTimeMillis() - then);
             while (x < Main.BROADCAST_PERIOD) {
@@ -68,12 +63,36 @@ public class MulticastServerThread extends Thread {
             count++;
         }
         try {
-			sock.leaveGroup(group);
+			sock.leaveGroup(sock.getInetAddress());
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
         sock.close();
         System.err.println("closed");
+	}
+
+	/** Returns the address of the multicast socket. */
+	public InetAddress getInetAddress() {
+		if(socketIsSafe()) {
+			return sock.getInetAddress();
+		}
+		return null;
+	}
+
+	/** Returns the port to which clients should connect to listen to the socket. */
+	public int getLocalPort() {
+		if (socketIsSafe()) {
+			return sock.getLocalPort();
+		}
+		return -1;
+	}
+
+	/** Helper method that makes sure the socket is set up correctly before use. */
+	private boolean socketIsSafe() {
+		if (sock != null) {
+			return !sock.isClosed() && sock.isBound() && sock.isConnected();
+		}
+		return false;
 	}
 }

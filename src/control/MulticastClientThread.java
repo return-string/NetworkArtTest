@@ -21,9 +21,7 @@ public class MulticastClientThread extends Thread {
 	public MulticastClientThread(MulticastSocket ms) {
         if (ms==null)  throw new IllegalArgumentException();
         // then set up the group for this socket
-        try {
-			group = InetAddress.getByName(Main.DEFAULT_IP); // FIXME arbitrary IP suggested by oracle
-		} catch (UnknownHostException e) { e.printStackTrace(); }
+        group = sock.getInetAddress(); // FIXME arbitrary IP suggested by oracle
 		this.sock = ms;
 	}
 
@@ -34,21 +32,10 @@ public class MulticastClientThread extends Thread {
 
 		InetAddress group = null;
 		try {
-			group = InetAddress.getByName(Main.DEFAULT_IP); // FIXME
+			group = sock.getInetAddress(); // FIXME
 			sock.joinGroup(group);
 		} catch (UnknownHostException e2) { e2.printStackTrace();
 		} catch (IOException e1) { e1.printStackTrace(); }
-
-
-
-
-
-
-
-
-
-
-
 
 		while (listening) {
 	        // send request
