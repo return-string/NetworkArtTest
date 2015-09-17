@@ -13,33 +13,26 @@ import java.nio.channels.DatagramChannel;
 
 import main.Main;
 
-public class MulticastClientThread extends Thread {
+public class MulticastClientThread extends SocketThread {
 	private MulticastSocket sock;
 	private boolean listening = true;
 	private InetAddress group;
 
-	public MulticastClientThread(MulticastSocket ms) {
-        if (ms==null)  throw new IllegalArgumentException();
-        // then set up the group for this socket
-        group = sock.getInetAddress(); // FIXME arbitrary IP suggested by oracle
-		this.sock = ms;
+	public MulticastClientThread(int port) {
+        if (port < 0) { throw new IllegalArgumentException(); }
+        try {
+			sock = new MulticastSocket(port);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	public void run() {
 		System.out.println("start c");
-		// first, join the party: we have to tell the server we'd like to connect
-
-
-		InetAddress group = null;
-		try {
-			group = sock.getInetAddress(); // FIXME
-			sock.joinGroup(group);
-		} catch (UnknownHostException e2) { e2.printStackTrace();
-		} catch (IOException e1) { e1.printStackTrace(); }
-
+		// we're part of the group! let's get to the business of game data exchange
 		while (listening) {
-	        // send request
-	        byte[] buf = new byte[256];
+	        ByteBuffer bb = ByteBuffer.allocate(Main.LARGE_PACKET_SIZE);
 	        // where do we send?
 		    for (int i = 0; i < 6; i++) {
 		        DatagramPacket packet = new DatagramPacket(buf, buf.length);
@@ -50,6 +43,10 @@ public class MulticastClientThread extends Thread {
 					e.printStackTrace();
 					listening = false;
 				}
+
+
+		        //TODO YOU WERE HERE
+
 
 			    // display response
 		        String received = new String(packet.getData(), 0, packet.getLength());
@@ -82,5 +79,26 @@ public class MulticastClientThread extends Thread {
 		} else {
 			System.out.println("Value of 0 is not A or B");
 		}
+	}
+
+	@Override
+	public InetAddress getInetAddress() {
+		throw new UnsupportedOperationException(); // TODO
+	}
+
+	@Override
+	public int getLocalPort() {
+		throw new UnsupportedOperationException(); // TODO
+	}
+
+	@Override
+	public boolean isSocketSafe() {
+		throw new UnsupportedOperationException(); // TODO
+	}
+
+	@Override
+	protected void close() {
+		throw new UnsupportedOperationException(); // TODO
+
 	}
 }

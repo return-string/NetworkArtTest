@@ -17,15 +17,19 @@ import main.Main;
  * (Later it'll handle that itself but for now we'll assume
  * that the socket is everything it needs to be.) */
 
-public class MulticastServerThread extends Thread {
+public class MulticastServerThread extends SocketThread {
 	private static MulticastSocket sock; // FIXME what is this static declaration. why is it here. get rid of it.
 	private boolean keepPlaying = true;
 
 	/** Creates a new server thread around the given socket */
-	public MulticastServerThread(MulticastSocket ms) {
-		if (ms==null) throw new IllegalArgumentException();
-		// then set up the group for this socket
-		MulticastServerThread.sock = ms;
+	public MulticastServerThread() {
+		try {
+			sock = new MulticastSocket();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		if (sock == null) throw new IllegalArgumentException();
 	}
 
 	/** MULTICAST VERSION */
@@ -35,20 +39,18 @@ public class MulticastServerThread extends Thread {
         while (keepPlaying) {
         	long then = System.currentTimeMillis();
             try {
-            	// create a buffer and a packet. we'll reuse these.
-                byte[] buf = new byte[256];
+            	ByteBuffer bb = ByteBuffer.allocate(Main.LARGE_PACKET_SIZE);
 
                 // figure out message...
                 String dString = null;
-                if (Math.random() < 0.5)
-                    dString = "A";
-                else
-                    dString = "B";
-                buf = dString.getBytes();
+                if (Math.random() < 0.5) { dString = "A"; }
+                else { dString = "B"; }
+                bb.put(dString.getBytes());
                 DatagramPacket packet = new DatagramPacket(dString.getBytes(),dString.length(),
                 	sock.getInetAddress(), sock.getLocalPort()); //FIXME not right
+
+                // send your packet out to everyone
                 sock.send(packet);
-            	System.out.println(count +": "+ Byte.valueOf(buf[0]));
             } catch (IOException e) {
                 e.printStackTrace();
                 System.out.println("end!");
@@ -72,7 +74,6 @@ public class MulticastServerThread extends Thread {
         System.err.println("closed");
 	}
 
-	/** Returns the address of the multicast socket. */
 	public InetAddress getInetAddress() {
 		if(socketIsSafe()) {
 			return sock.getInetAddress();
@@ -80,7 +81,6 @@ public class MulticastServerThread extends Thread {
 		return null;
 	}
 
-	/** Returns the port to which clients should connect to listen to the socket. */
 	public int getLocalPort() {
 		if (socketIsSafe()) {
 			return sock.getLocalPort();
@@ -88,11 +88,15 @@ public class MulticastServerThread extends Thread {
 		return -1;
 	}
 
-	/** Helper method that makes sure the socket is set up correctly before use. */
 	private boolean socketIsSafe() {
 		if (sock != null) {
 			return !sock.isClosed() && sock.isBound() && sock.isConnected();
 		}
 		return false;
+	}
+
+	@Override
+	protected void close() {
+		sock.close();
 	}
 }

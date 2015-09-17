@@ -12,7 +12,7 @@ import java.nio.channels.DatagramChannel;
 
 import main.Main;
 
-public class SingleClientThread extends Thread {
+public class SingleClientThread extends SocketThread {
 	private DatagramSocket sock;
 	private MulticastSocket clientSock;
 
@@ -84,5 +84,25 @@ public class SingleClientThread extends Thread {
 		} else {
 			System.out.println("Value of 0 is not A or B");
 		}
+	}
+
+	@Override
+	public InetAddress getInetAddress() {
+		return sock.getInetAddress();
+	}
+
+	@Override
+	public int getLocalPort() {
+		return sock.getLocalPort();
+	}
+
+	@Override
+	public boolean isSocketSafe() {
+		return sock != null && !sock.isClosed();
+	}
+
+	@Override
+	protected void close() {
+		sock.close();
 	}
 }
